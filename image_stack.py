@@ -132,5 +132,5 @@ class ImageStack:
             newFname = Fname+f"_{minThresG}"+ext
             newFpath = Path(outCloudFolder,newFname)
             with rasterio.open(newFpath, 'w', **meta) as dst:
-                dst.write(maskarray,1)
+                dst.write(maskarray,2)
             minThresG += 50
