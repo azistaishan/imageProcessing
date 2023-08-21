@@ -134,3 +134,73 @@ class ImageStack:
             with rasterio.open(newFpath, 'w', **meta) as dst:
                 dst.write(maskarray,2)
             minThresG += 50
+    def getcloudMask(self, imgPath, outFolder, thres=3000, band='Green'):
+        """
+        Creates the cloud masked image using RGBNir Image 
+        input:
+            Image to be cloud corrected
+        Output:
+            Cloud Mask with same name as the RGB Nir Image with _Cloud.
+        """
+        with rio.open(imgPath) as dst:
+            img = dst.read()
+            meta = dst.meta
+            imgShape = img.shape
+        temp = np.zeros(imgShape[1], imgShape[2])
+        temp[img[2,:,:]>=thres] = 1
+        givenP = Path(imgPath)
+        newName = f"{givenP.stem}_Cloud{givenP.suffix}"
+        outFpath = Path(outFolder, newName)
+        meta.update(count=1)
+        with rio.open(outFpath, 'w', **meta) as dst:
+            dst.write(temp,1)
+    def applyCloudMask(self, imgPath, cloudMaskPath, outFolder, fillVal = 0):
+        with rio.open(imgPath) as dst:
+            img = dst.read()
+            meta = dst.meta
+            imgShape = img.shape
+        with rio.open(cloudMaskPath) as dst:
+            cloudM = dst.read()
+            #cloudMeta = dst.meta
+            cloudShape = dst.shape
+        try:
+            cloudShape[1] == imgShape[1]
+            img[:,cloudM==1] = fillVal
+            givenN = Path(outFolder)
+            Fname = Path(imgPath).stem
+            ext = Path(imgPath).suffix
+            outFname = f"{Fname}_CloudFixed{ext}"
+            outFpath = Path(outFolder,outFname)
+            with rio.open(outFpath, 'w', **meta) as dst:
+                dst.write(img)
+        except:
+            Print('The shape of cloud and image do not match')
+
+    def getImageStack(self, imgFolder, outFolder, outFname, ext='tif'):
+        """
+        This stack applies for single value maps such as NDVI, NDRE image stack
+        """
+        imageList = glob.glob(f"imgFolder\*.{ext}")
+        imgSize = len(imageList)
+        with rio.open(imageList[0]) as dst:
+            img = dst.read()
+            imgShape = img.shape
+            meta = dst.meta
+        zeroImg = np.zeros(imgSize, imgShape[1], imgShape[2])
+        for i in range(len(imageList)):
+            with rio.open(imageList[i]) as dst:
+                zeroImg[i] = dst.read(1)
+        meta.update(count = imgSize)
+        newImgFpath = Path(outFolder, outFname)
+        with rio.open(newImgFpath, 'w', **meta) as dst:
+            dst.write(zeroImg)
+    def maskImageStack(self, imgFpath, maskFpath, outFpath, maskVal = 1, maskFill = 0):
+        with dst.open(imgFpath) as dst:
+            img = dst.read()
+            meta = dst.meta
+            imgShape = img.shape
+        with dst.open(maskFpath) as dst:
+            mask = dst.read(1)
+        img[:,mask==maskVal] = maskFill
+        with dst.open(outFpath, 'w', **meta) as dst:
+            dst.write(img)
