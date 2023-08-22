@@ -33,13 +33,13 @@ class kMeansCluster:
         plt.ylabel("Inertia")
         plt.show()
         # return clusterList, inertiaList, labelList
-    def getKmeans1(self, n_clusters=50, ret=True):
+    def getKmeansTSL(self, n_clusters=50, ret=True, save=True, savePath=None):
         self.km_tslearn = clustering.TimeSeriesKMeans(
             n_clusters=n_clusters, metric="euclidean", n_init=3, 
             n_jobs=5, max_iter=5,max_iter_barycenter=3,).fit(self.flatImg)
         if ret==True: 
             return self.km_tslearn
-    def getKmeansCV(self, n_clusters=50, ret=False):
+    def getKmeansCV(self, n_clusters=50, ret=False, savePath=None):
         shape = self.shape
         tempImg = np.zeros(shape[1], shape[2], shape[3])
         for i in range(shape[0]):
@@ -53,4 +53,11 @@ class kMeansCluster:
         self.labelImg_cv = labelImg
         if ret==True:
             return labelImg
-    
+        if savePath is not None:
+            #TODO: Change the data type of input data according to meta file
+            meta = self.meta
+            meta.update(count=1)
+            if savePath==None:
+                print("Please enter the save path")
+            with rio.open(savePath, 'w', **meta) as dst:
+                dst.write(labelImg)
